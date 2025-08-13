@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR 음성 안내 (TTS)</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111111;
+      --muted: #555555;
+      --accent: #0a7cff;
+      --accent-2: #0c8b3f;
+      --radius: 16px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0b0b0b; --fg:#efefef; --muted:#aaaaaa; --accent:#4e9cff; --accent-2:#35b56e; }
+    }
+    html, body { height:100%; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Apple SD Gothic Neo, "Malgun Gothic", Arial, sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
+    header { margin-bottom: 16px; }
+    h1 { font-size: clamp(1.4rem, 4.5vw, 2rem); margin: 0 0 8px; }
+    p.lead { color: var(--muted); margin: 0 0 8px; }
+
+    .controls {
+      position: sticky; top: 0; z-index: 10; 
+      background: color-mix(in lab, var(--bg) 92%, transparent);
+      backdrop-filter: blur(6px);
+      border: 1px solid color-mix(in lab, var(--fg) 12%, transparent);
+      border-radius: var(--radius);
+      padding: 12px; margin: 12px 0 16px;
+      display: grid; gap: 8px;
+    }
+    .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    button, select, input[type="range"] {
+      font: inherit; border-radius: 12px; border: 1px solid color-mix(in lab, var(--fg) 16%, transparent);
+      padding: 12px; background: color-mix(in lab, var(--bg) 96%, transparent); color: var(--fg);
+    }
+    button { cursor: pointer; font-weight: 600; }
+    button.primary { background: var(--accent); color: white; border:none; }
+    button.good { background: var(--accent-2); color: white; border:none; }
+    button:focus, select:focus, input:focus { outline: 3px solid color-mix(in lab, var(--accent) 50%, transparent); outline-offset: 2px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
+    .status { font-size: 0.95rem; color: var(--muted); }
+    .hidden { display:none !important; }
+
+    .content {
+      font-size: 1.125rem; /* 18px */
+      line-height: 1.8;
+    }
+    .content p { margin: 0 0 1rem; }
+    .big-start {
+      display: grid; place-items: center; gap: 10px; padding: 16px; margin: 12px 0 0;
+      border: 2px dashed color-mix(in lab, var(--fg) 25%, transparent); border-radius: var(--radius);
+    }
+    .big-start button { font-size: 1.1rem; padding: 14px 16px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  </style>
+</head>
+<body>
+  <a href="#main" class="sr-only">본문으로 건너뛰기</a>
+  <div class="wrap">
+    <header>
+      <h1 id="title">전시 음성 안내</h1>
+      <p class="lead" id="subtitle">QR 스캔 즉시 자동 재생을 시도합니다. 차단되면 아래 <strong>"재생"</strong> 버튼을 눌러 주세요.</p>
+    </header>
+
+    <section class="controls" aria-label="음성 재생 컨트롤">
+      <div class="btns">
+        <button id="playBtn" class="primary" aria-label="읽기 시작">재생</button>
+        <button id="pauseBtn" aria-label="일시 정지">일시 정지</button>
+        <button id="resumeBtn" aria-label="다시 시작">다시 시작</button>
+        <button id="stopBtn" aria-label="정지">정지</button>
+      </div>
+      <div class="row" role="group" aria-label="읽기 속도">
+        <label for="rate">속도 <span id="rateVal">1.0x</span></label>
+        <input id="rate" type="range" min="0.7" max="1.6" value="1.0" step="0.1" />
+      </div>
+      <div class="row" role="group" aria-label="목소리 선택">
+        <label for="voice">목소리</label>
+        <select id="voice" aria-label="TTS 목소리 선택"></select>
+      </div>
+      <div class="status" id="status" aria-live="polite">상태: 준비됨</div>
+    </section>
+
+    <main id="main" class="content" tabindex="-1">
+      <!-- ✅ 여기 텍스트를 전시별로 바꿔서 사용하세요. (이미지로 넣지 마세요) -->
+      <article id="content">
+        <h2>작품 제목: 바람의 기억</h2>
+        <p>이 작품은 관람자의 움직임에 반응하여 빛과 그림자가 변합니다. 작가는 초기 사진술과 광학 장치를 연구하면서, 시간이 흐르는 감각을 시각적으로 재구성했습니다.</p>
+        <p>작품을 가까이에서 보실 경우, 표면의 미세한 질감과 투영된 빛의 떨림을 느껴보세요. 한 걸음 떨어져 보시면 전체 구성이 만들어내는 공간적 리듬이 더욱 분명해집니다.</p>
+        <p>안내가 끝난 뒤, 이어지는 작품도 QR 코드를 스캔하시면 음성으로 들으실 수 있습니다.</p>
+      </article>
+    </main>
+
+    <div class="big-start" id="bigStart">
+      <div>자동 재생이 차단된 경우 아래 버튼을 눌러 주세요.</div>
+      <button class="good" id="bigPlay">음성 안내 시작</button>
+    </div>
+
+    <footer style="margin:24px 0 8px; color:var(--muted); font-size:0.95rem;">
+      <p>접근성 팁: 화면을 두 손가락으로 아래로 쓸어내리면(아이폰) 현재 화면을 읽습니다. 안드로이드는 “선택해서 읽기”를 사용하실 수 있습니다.</p>
+    </footer>
+  </div>
+
+  <script>
+    // ===== 설정값 (필요 시 수정) =====
+    const DEFAULT_LANG = new URLSearchParams(location.search).get('lang') || 'ko-KR';
+    const REMOTE_SRC = new URLSearchParams(location.search).get('src'); // ?src=텍스트파일URL (옵션)
+    // ==================================
+
+    let utterQueue = []; // 문장 단위로 큐잉
+    let speaking = false;
+    let paused = false;
+
+    const $content = document.getElementById('content');
+    const $status = document.getElementById('status');
+    const $play = document.getElementById('playBtn');
+    const $pause = document.getElementById('pauseBtn');
+    const $resume = document.getElementById('resumeBtn');
+    const $stop = document.getElementById('stopBtn');
+    const $bigStart = document.getElementById('bigStart');
+    const $bigPlay = document.getElementById('bigPlay');
+    const $voiceSel = document.getElementById('voice');
+    const $rate = document.getElementById('rate');
+    const $rateVal = document.getElementById('rateVal');
+
+    function setStatus(msg) {
+      $status.textContent = '상태: ' + msg;
+    }
+
+    function getText() {
+      // 콘텐츠에서 화면에 보이는 텍스트만 추출
+      return $content.innerText.trim();
+    }
+
+    function splitIntoChunks(text) {
+      // 너무 긴 문장을 방지하기 위해 안전하게 분할
+      const parts = text
+        .replace(/\s+/g, ' ')
+        .split(/([.!?。！？]\s+)/);
+
+      const chunks = [];
+      for (let i = 0; i < parts.length; i += 2) {
+        let sentence = (parts[i] || '') + (parts[i+1] || '');
+        sentence = sentence.trim();
+        if (!sentence) continue;
+        // 길면 추가 분할 (약 180자 단위)
+        if (sentence.length > 180) {
+          for (let j = 0; j < sentence.length; j += 180) {
+            chunks.push(sentence.slice(j, j + 180));
+          }
+        } else {
+          chunks.push(sentence);
+        }
+      }
+      return chunks.length ? chunks : [text];
+    }
+
+    function fillVoices() {
+      const voices = speechSynthesis.getVoices();
+      $voiceSel.innerHTML = '';
+      // ko-KR 우선, 그 다음 일반 한국어/기타
+      const preferred = voices.filter(v => /ko-KR/i.test(v.lang));
+      const others = voices.filter(v => !/ko-KR/i.test(v.lang));
+      const all = [...preferred, ...others];
+      all.forEach((v, idx) => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = `${v.name} (${v.lang})`;
+        if (idx === 0) opt.selected = true;
+        $voiceSel.appendChild(opt);
+      });
+    }
+
+    function makeUtter(text) {
+      const u = new SpeechSynthesisUtterance(text);
+      const chosen = Array.from(speechSynthesis.getVoices()).find(v => v.name === $voiceSel.value) ||
+                     Array.from(speechSynthesis.getVoices()).find(v => v.lang === DEFAULT_LANG);
+      if (chosen) u.voice = chosen;
+      u.lang = chosen?.lang || DEFAULT_LANG;
+      u.rate = parseFloat($rate.value || '1.0');
+      u.onstart = () => setStatus('읽는 중…');
+      u.onend = () => {
+        if (utterQueue.length) {
+          speechSynthesis.speak(utterQueue.shift());
+        } else {
+          speaking = false; setStatus('완료');
+        }
+      };
+      u.onerror = (e) => setStatus('오류: ' + (e.error || '읽기 실패'));
+      return u;
+    }
+
+    function speakNow() {
+      speechSynthesis.cancel();
+      utterQueue = splitIntoChunks(getText()).map(makeUtter);
+      if (!utterQueue.length) { setStatus('읽을 텍스트가 없습니다'); return; }
+      speaking = true; paused = false;
+      speechSynthesis.speak(utterQueue.shift());
+      setStatus('읽는 중…');
+    }
+
+    function tryAutoStart() {
+      // 일부 브라우저(iOS 등)는 사용자 제스처 필요 → 실패 시 큰 시작 버튼 노출
+      try {
+        speakNow();
+        // iOS에서 즉시 실패 감지 어려움 → 600ms 후에 아직 대기면 버튼 노출
+        setTimeout(() => {
+          const isSpeaking = speechSynthesis.speaking;
+          if (!isSpeaking) $bigStart.classList.remove('hidden'); else $bigStart.classList.add('hidden');
+        }, 600);
+      } catch (e) {
+        $bigStart.classList.remove('hidden');
+      }
+    }
+
+    // 이벤트 바인딩
+    $play.addEventListener('click', speakNow);
+    $bigPlay.addEventListener('click', () => { $bigStart.classList.add('hidden'); speakNow(); });
+    $pause.addEventListener('click', () => { if (speechSynthesis.speaking) { speechSynthesis.pause(); paused = true; setStatus('일시 정지'); }});
+    $resume.addEventListener('click', () => { if (paused) { speechSynthesis.resume(); paused = false; setStatus('다시 시작'); }});
+    $stop.addEventListener('click', () => { speechSynthesis.cancel(); utterQueue = []; speaking = false; setStatus('정지됨'); });
+    $rate.addEventListener('input', () => { $rateVal.textContent = `${parseFloat($rate.value).toFixed(1)}x`; });
+
+    // 브라우저에서 음성 목록 로드
+    if ('speechSynthesis' in window) {
+      fillVoices();
+      window.speechSynthesis.onvoiceschanged = fillVoices;
+    } else {
+      setStatus('이 브라우저는 TTS를 지원하지 않습니다. 기기의 접근성 읽기 기능을 사용해 주세요.');
+    }
+
+    // 원격 텍스트 소스가 지정된 경우 가져와서 본문 교체 (?src=URL)
+    async function maybeLoadRemote() {
+      if (!REMOTE_SRC) return;
+      try {
+        setStatus('텍스트 불러오는 중…');
+        const res = await fetch(REMOTE_SRC, { cache: 'no-store' });
+        const txt = await res.text();
+        $content.innerText = txt.trim();
+        setStatus('불러옴');
+      } catch (e) {
+        setStatus('텍스트 불러오기 실패');
+      }
+    }
+
+    // 페이지 진입 시 자동 시작 시도
+    (async function init() {
+      await maybeLoadRemote();
+      // iOS 사용자 제스처 우회: 첫 터치에서 한번 더 시도
+      document.addEventListener('touchstart', onceKick, { passive: true, once: true });
+      function onceKick() { if (!speechSynthesis.speaking) speakNow(); }
+      tryAutoStart();
+    })();
+  </script>
+</body>
+</html>
