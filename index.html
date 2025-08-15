@@ -3,484 +3,313 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR 음성 안내 (TTS)</title>
-  <meta name="color-scheme" content="light dark" />
+  <title>쉬운 미술관 안내서</title>
+  <meta name="description" content="QR로 열리면 바로 읽히는 쉬운 미술관 안내서 텍스트 페이지" />
   <style>
     :root {
-      --bg: #ffffff;
-      --fg: #111111;
-      --muted: #555555;
-      --accent: #0a7cff;
-      --accent-2: #0c8b3f;
-      --radius: 16px;
+      --bg: #fff;
+      --fg: #111;
+      --muted: #555;
+      --link: #0645ad;
+      --border: #e5e5e5;
+      --maxw: 48rem;
+      --focus: #ffdf80;
     }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg:#0b0b0b; --fg:#efefef; --muted:#aaaaaa; --accent:#4e9cff; --accent-2:#35b56e; }
+    html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      font-size: 1.125rem; line-height: 1.7;
+      -webkit-text-size-adjust: 100%;
     }
-    html, body { height:100%; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Apple SD Gothic Neo, "Malgun Gothic", Arial, sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
-    header { margin-bottom: 16px; }
-    h1 { font-size: clamp(1.4rem, 4.5vw, 2rem); margin: 0 0 8px; }
-    p.lead { color: var(--muted); margin: 0 0 8px; }
-
-    .controls {
-      position: sticky; top: 0; z-index: 10; 
-      background: color-mix(in lab, var(--bg) 92%, transparent);
-      backdrop-filter: blur(6px);
-      border: 1px solid color-mix(in lab, var(--fg) 12%, transparent);
-      border-radius: var(--radius);
-      padding: 12px; margin: 12px 0 16px;
-      display: grid; gap: 8px;
+    a { color: var(--link); }
+    .skip-link {
+      position: absolute; left:-9999px; width:1px; height:1px; overflow:hidden;
     }
-    .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    button, select, input[type="range"] {
-      font: inherit; border-radius: 12px; border: 1px solid color-mix(in lab, var(--fg) 16%, transparent);
-      padding: 12px; background: color-mix(in lab, var(--bg) 96%, transparent); color: var(--fg);
+    .skip-link:focus {
+      position: static; width:auto; height:auto; padding:.5rem .75rem; background:var(--focus); display:inline-block; margin:.5rem;
     }
-    button { cursor: pointer; font-weight: 600; }
-    button.primary { background: var(--accent); color: white; border:none; }
-    button.good { background: var(--accent-2); color: white; border:none; }
-    button:focus, select:focus, input:focus { outline: 3px solid color-mix(in lab, var(--accent) 50%, transparent); outline-offset: 2px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
-    .status { font-size: 0.95rem; color: var(--muted); }
-    .hidden { display:none !important; }
-
-    .content {
-      font-size: 1.125rem; /* 18px */
-      line-height: 1.8;
+    header, main, footer { display:block; }
+    header, main { padding: 1rem; }
+    .container { max-width: var(--maxw); margin: 0 auto; }
+    h1, h2, h3, h4 { line-height: 1.3; }
+    h1 { font-size: 1.9rem; margin: .5rem 0 1rem; }
+    h2 { font-size: 1.4rem; margin: 2rem 0 1rem; }
+    h3 { font-size: 1.2rem; margin: 1.2rem 0 .6rem; }
+    h4 { font-size: 1.1rem; margin: 1rem 0 .4rem; }
+    p { margin: 0 0 1rem 0; }
+    ul, ol { margin: 0 0 1rem 1.2rem; }
+    li { margin: .25rem 0; }
+    nav[aria-label="바로가기"] {
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1rem;
+      background: #fafafa;
+      margin: .5rem 0 1.5rem 0;
     }
-    .content p { margin: 0 0 1rem; }
-    .big-start {
-      display: grid; place-items: center; gap: 10px; padding: 16px; margin: 12px 0 0;
-      border: 2px dashed color-mix(in lab, var(--fg) 25%, transparent); border-radius: var(--radius);
-    }
-    .big-start button { font-size: 1.1rem; padding: 14px 16px; }
-    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .toc-root { margin: 0; padding-left: 1.1rem; }
+    .toc-root > li { margin:.4rem 0; }
+    .toc-sub { margin:.35rem 0 .5rem 1.1rem; padding-left: 1.1rem; }
+    .muted { color: var(--muted); font-size: .95rem; }
+    .top-link { display:inline-block; margin:1.25rem 0 0 0; font-size:.95rem; }
+    hr { border:0; border-top:1px solid var(--border); margin:2rem 0; }
+    /* 현재 이동한 앵커를 시각적으로 표시 */
+    :target { scroll-margin-top: .6rem; }
+    :target + * { outline: 3px solid var(--focus); outline-offset: 6px; }
   </style>
 </head>
 <body>
-  <a href="#main" class="sr-only">본문으로 건너뛰기</a>
-  <div class="wrap">
-    <header>
-      <h1 id="title">전시 음성 안내</h1>
-      <p class="lead" id="subtitle">QR 스캔 즉시 자동 재생을 시도합니다. 차단되면 아래 <strong>"재생"</strong> 버튼을 눌러 주세요.</p>
-    </header>
-
-    <section class="controls" aria-label="음성 재생 컨트롤">
-      <div class="btns">
-        <button id="playBtn" class="primary" aria-label="읽기 시작">재생</button>
-        <button id="pauseBtn" aria-label="일시 정지">일시 정지</button>
-        <button id="resumeBtn" aria-label="다시 시작">다시 시작</button>
-        <button id="stopBtn" aria-label="정지">정지</button>
-      </div>
-      <div class="row" role="group" aria-label="읽기 속도">
-        <label for="rate">속도 <span id="rateVal">1.0x</span></label>
-        <input id="rate" type="range" min="0.7" max="1.6" value="1.0" step="0.1" />
-      </div>
-      <div class="row" role="group" aria-label="목소리 선택">
-        <label for="voice">목소리</label>
-        <select id="voice" aria-label="TTS 목소리 선택"></select>
-      </div>
-      <div class="status" id="status" aria-live="polite">상태: 준비됨</div>
-    </section>
-
-    <main id="main" class="content" tabindex="-1">
-  <!-- ✅ 여기 전체를 복사/붙여넣기 하세요 -->
-  <article id="content">
-
-    <p>Section 1. ‘모든 가방’ 사용설명서</p>
-
-    <p>‘모든 가방’이란?</p>
-
-    <p>'모든 가방(Modeun Gabang)'에는 미술관을 편안하게 관람할 수 있도록 도와주는 도구들이 들어 있어요. </p>
-    <p>모두가 함께, 모두를 위해 만든 특별한 예술 작품입니다. </p>
-    <p>모든 도구를 사용하지 않아도 괜찮아요. 필요할 때 꺼내 쓰고, 원할 때 다시 넣으시면 됩니다.</p>
-    <p>‘모든 가방’은 다음 관람객을 위해 깨끗이 다뤄주세요!</p>
-
-    <p>도구 소개</p>
-
-    <p>쉬운 미술관 안내서</p>
-    <p>지금 보고 계신 이 책이에요. 쉬운 미술관 안내서에는 4가지 내용이 있어요.</p>
-
-    <p>1)’모든 가방’ 사용설명서</p>
-    <p>가방에 어떤 도구가 들어 있는지, 어떻게 사용하면 좋을지 알려줘요.</p>
-
-    <p>2)관람 가이드</p>
-    <p>입장 방법, 스태프를 찾는 방법 등 미술관을 편하게 이용할 수 있는 정보를 담고 있어요.</p>
-
-    <p>3)감각지도</p>
-    <p>화장실, 정수기, 전시실, 조용한 공간 등이 표시된 미술관 지도예요.</p>
-
-    <p>4)쉬운 글 해설</p>
-    <p>작품 설명을 쉽고 간단한 말로 풀어썼어요. 전시에 따라 쉬운 해설이 없을 수도 있어요.</p>
-
-    <p>소통카드</p>
-    <p>도움이 필요하지만 말하기 어려울 때 대신 보여줄 수 있는 카드예요.</p>
-
-    <p>헤드셋</p>
-    <p>귀에 쓰면 시끄러운 소리를 막아줘요.</p>
-
-    <p>피젯 키링</p>
-    <p>손으로 만지면서 진정하거나 집중하는 데 도움이 돼요. </p>
-    <p>이 키링은 색깔에 따라 스태프에게 신호를 보내는 용도로도 사용할 수 있어요. 가방 앞쪽에 잘 보이도록 달아주세요.</p>
-
-    <p>빨강: 도움이 필요해 보이면 먼저 다가와 주세요.</p>
-    <p>파랑: 작품을 가까이서 보고 싶어요.</p>
-
-    <p>활동지</p>
-    <p>작품을 더 잘 느끼고 이해하도록 도와주는 질문들이 들어 있어요.</p>
-
-    <p>펜</p>
-    <p>활동지를 채우거나 쓰고 싶은 것이 있을 때 사용해요.</p>
-
-    <p>메모지</p>
-    <p>글을 써서 소통하거나 적고 싶은 것이 있을 때 사용해요.</p>
-
-    <p>‘모든 가방’ 반납하기</p>
-
-    <p>관람이 끝나면, ‘모든 가방’을 전시실 앞에 놓인 가방 거치대에 정리해주세요.</p>
-    <p>사용한 활동지는 가져가도 돼요.</p>
-    <p>쉬운 미술관 안내서, 소통카드, 헤드셋, 피젯 키링, 펜, 메모지는 가방 안에 다시 넣어주세요.</p>
-    <p>다음에 오는 사람이 또 사용할 수 있어요.</p>
-    <p>그럼, 즐거운 관람 되세요!</p>
-
-    <p>Section 2. 관람 가이드</p>
-
-    <p>미술관 입장하기</p>
-    <p>음식물이나 음료는 안으로 가져갈 수 없어요.</p>
-    <p>천장이 높아 소리가 조금 울려요.</p>
-
-    <p>안내데스크</p>
-    <p>입장하면 왼쪽에 안내데스크가 보여요. 현재 전시를 확인하고, 리플릿을 가져갈 수 있어요. 리플릿은 1층에만 있으니, 필요하다면 이곳에서 미리 챙겨주세요.</p>
-    <p>어린이나 이동에 도움이 필요한 사람과 함께 왔다면,</p>
-    <p>안내데스크에서 휠체어, 유아차를 빌릴 수 있어요.</p>
-    <p>안내데스크 뒤쪽에는 놀이방과 수유실이 있어요. 영유아가 쉬거나, 보호자가 수유할 수 있는 곳이에요.</p>
-
-    <p>화장실에 가고 싶거나 목이 마르다면,</p>
-    <p>입구에서 오른쪽으로 가세요.</p>
-    <p>화장실과 정수기가 있어요.</p>
-    <p>화장실은 미술관 모든 층에 있어요.</p>
-    <p>정수기는 1층, 지하1층에만 있어요.</p>
-
-    <p>짐이 크거나 무겁나요? 물품보관소가 있어요.</p>
-    <p>입구에서 왼쪽으로 가세요.</p>
-    <p>카페에 도착하기 전, 오른쪽에 엘리베이터가 보여요.</p>
-    <p>엘리베이터를 타고 지하 1층으로 내려가세요.</p>
-
-    <p>내리면 물품 보관소가 보여요.</p>
-    <p>열쇠가 달려있는 칸을 찾으세요.</p>
-    <p>짐을 넣고 문을 닫으세요.</p>
-    <p>열쇠를 왼쪽으로 돌려 문을 잠그세요.</p>
-    <p>열쇠는 잃어버리지 않게 잘 챙겨두세요.</p>
-
-    <p>전시실 찾아가기</p>
-    <p>전시실은 1층, 2층, 3층에 있어요. 정해진 순서는 없어요. 원하는 곳부터 방문해보세요. 로비에 있는 계단으로 올라갈 수 있어요.</p>
-
-    <p>엘리베이터를 탈 수도 있어요.</p>
-    <p>입구에서 왼쪽으로 가세요.</p>
-    <p>카페에 도착하기 전, 오른쪽에 엘리베이터가 보여요.</p>
-
-    <p>전시실 입장하기</p>
-    <p>전시는 무료예요. 편하게 관람하면 됩니다.</p>
-    <p>유료 전시가 있는 경우에는 매표소에서 티켓을 구입하세요.</p>
-
-    <p>전시를 보다 도움이 필요하다면,</p>
-    <p>검정 옷을 입고 카드목걸이를 맨 스태프를 찾아보세요. 주로 전시실 입구 근처 검은 의자에 앉아있어요.</p>
-
-    <p>조용한 관람을 원한다면,</p>
-    <p>2층 상설전시는 소음이 적은 편입니다.</p>
-    <p>천경자 컬렉션, 가나아트 컬렉션을 전시하고 있습니다.</p>
-
-    <p>기획전시실에서는</p>
-    <p>1, 2, 3층에 있는 기획전시실에서는 빛, 소리 등을 활용한 전시가 열립니다. </p>
-    <p>시끄럽거나 놀랄 수 있어요. </p>
-
-    <p>쉬고 싶다면,</p>
-    <p>미술관 곳곳에 앉을 수 있는 의자가 있어요.</p>
-    <p>1층 입구 근처</p>
-    <p>2층 복도</p>
-    <p>3층 복도, 창가 옆, 서점 옆</p>
-
-    <p>더 조용한 공간이 필요하신가요?</p>
-    <p>2층 엘리베이터 옆 도서자료실은 좀 더 조용해요.</p>
-
-    <p>운영 시간: 화, 수, 목, 금, 토 10시~18시</p>
-    <p>12~13시는 점심시간으로 쉽니다.</p>
-
-    <p>사용한 ‘모든 가방’은 꼭 반납해주세요</p>
-    <p>관람이 끝나면, ‘모든 가방’을 전시실 앞에 놓인 가방 거치대에 정리해주세요.</p>
-    <p>사용한 활동지는 가져가도 돼요.</p>
-    <p>쉬운 미술관 안내서, 소통카드, 헤드셋, 피젯 키링, 펜, 메모지는 가방 안에 다시 넣어주세요.</p>
-
-    <p>Section 3. 감각지도</p>
-
-    <p>감각지도 소개</p>
-
-    <p>낯선 공간이 걱정될 때, 감각지도가 도와줄 거예요.</p>
-    <p>안내데스크, 화장실, 정수기, 엘리베이터, 전시실 등의 위치를 표시했어요.</p>
-    <p>공간별 소음을 색깔과 점자로 표현했어요.</p>
-
-    <p>편의시설</p>
-    <p>안내데스크</p>
-    <p>화장실</p>
-    <p>장애인 화장실</p>
-    <p>엘리베이터</p>
-    <p>계단</p>
-    <p>음수대</p>
-    <p>카페</p>
-    <p>수유실</p>
-    <p>도서자료실</p>
-
-    <p>공간별 소음</p>
-    <p>소음 주의</p>
-    <p>적은 소음</p>
-
-    <p>출입구</p>
-    <p>1층</p>
-    <p>2층</p>
-    <p>3층</p>
-    <p>1층 전시실</p>
-    <p>2층 전시실</p>
-    <p>3층 전시실</p>
-    <p>가나아트 컬렉션 전시실</p>
-    <p>천경자 컬렉션 전시실</p>
-    <p>휴게 공간</p>
-    <p>서점</p>
-    <p>전시실</p>
-    <p>세마엘</p>
-
-    <p>‘모든 가방’(Modeun Gabang)</p>
-
-    <p>‘모든 가방’은 모두가 함께, 모두를 위해, 모두에게 필요한 미술관 관람 도구와 아이디어를 담은 예술 작품입니다. 신체, 인지, 연령의 차이에 관계 없이 누구나 편안하게 예술을 즐길 수 있도록, 서로의 생각과 경험을 모아 완성했습니다.</p>
-
-    <p>‘모든 가방’은 미션잇(김병수) 작가가 만든 예술 작품이며, 가방 속 삽화와 손글씨는 이나영(에토프) 작가의 작품입니다. 가방뿐 아니라 그 안의 모든 물건과 아이디어도 작가들의 소중한 창작물로, 저작권의 보호를 받습니다. ‘모든 가방’은 40명의 다양한 신체, 인지, 연령의 차이를 가진 참여자들이 7차례에 걸쳐 아이디어를 나누고 토론하여 완성했습니다. 이 작품의 모든 내용은 저작권법의 보호를 받으며, 활용이나 배포가 필요할 경우 작가와 서울시립미술관과 상의해 주시기 바랍니다.</p>
-
-    <p>© 2025 미션잇(김병수), 이나영(에토프), 서울시립미술관. All rights reserved.</p>
-
-    <p>주최</p>
-    <p>서울시립미술관</p>
-    <p>최은주 관장</p>
-
-    <p>학예 총괄</p>
-    <p>정소라 학예연구부장</p>
-
-    <p>전시·교육 총괄 </p>
-    <p>양옥금 전시교육과장</p>
-
-    <p>기획</p>
-    <p>김아영 학예연구사</p>
-    <p>안재윤, 황지원 코디네이터</p>
-
-    <p>참여 작가</p>
-    <p>미션잇(김병수)</p>
-
-    <p>프로그램 기획·제작</p>
-    <p>미션잇(김병수), 전예진, 임슬기, 백경하</p>
-
-    <p>디자인</p>
-    <p>김병수, 전예진, 김숙현, 최혜림 </p>
-
-    <p>삽화·손글씨</p>
-    <p>이나영(에토프)</p>
-
-    <p>번역</p>
-    <p>백경하 (영문)</p>
-    <p>한국점자인쇄 (한/영 점자) </p>
-
-    <p>가방 제작 </p>
-    <p>임종훈 </p>
-
-    <p>가구 디자인·제작</p>
-    <p>스튜디오플록 </p>
-
-    <p>인쇄</p>
-    <p>한국점자인쇄 (점자)</p>
-    <p>세걸음 (활동지)</p>
-    <p>태산인디고 (쉬운 미술관 안내서)</p>
-
-    <p>후원</p>
-    <p>한국벤처캐피탈협회</p>
-
-    <p>모두를 위한 예술 프로그램 </p>
-    <p>&lt;쉬운 글쓰기 x 확장 = 미술관에 갑니다&gt; (2025. 5. 13. – 6. 25.)</p>
-
-    <p>참여</p>
-    <p>강은영, 김도현, 김병수, 김보라, 김선미, 김세이, 김소원, 김아영, 김정수, 김준우, 김효정, 남영우, 도진영, 류사무엘, 박성인, 박수현, 박찬별, 백경하, 석지윤, 서덕, 안명림, 안재윤, 안현숙, 엄지우, 이상득, 이나영, 이보배, 이북신, 이수경, 이성수, 이아연, 이원무, 이지선, 임슬기, 장근영, 전예진, 정세영, 정성은, 정유진, 조하영, 최성윤, 허경현, 홍사강, 홍성달, 황예슬, 황지원</p>
-
-    <p>도움을 주신 분들 </p>
-    <p>히즈빈스, 중증장애인독립생활연대, 세바다, 조미정(세바다 대표), 힘빼고컴퍼니, 실로암시각장애인복지관</p>
-
-    <p>서울시립미술관</p>
-    <p>04515 서울특별시 중구 덕수궁길 61</p>
-    <p>02 2124 8800</p>
-    <p>sema@seoul.go.kr</p>
-    <p>sema.seoul.go.kr</p>
-
-  </article>
-</main>
-
-
-    <div class="big-start" id="bigStart">
-      <div>자동 재생이 차단된 경우 아래 버튼을 눌러 주세요.</div>
-      <button class="good" id="bigPlay">음성 안내 시작</button>
+  <a href="#content" class="skip-link">본문 바로가기</a>
+
+  <header role="banner">
+    <div class="container">
+      <h1 id="top">쉬운 미술관 안내서</h1>
+      <p class="muted">QR 코드로 열리면 바로 텍스트가 보이고, 아래 “바로가기(목차)”를 선택하면 각 항목으로 이동합니다.</p>
     </div>
+  </header>
 
-    <footer style="margin:24px 0 8px; color:var(--muted); font-size:0.95rem;">
-      <p>접근성 팁: 화면을 두 손가락으로 아래로 쓸어내리면(아이폰) 현재 화면을 읽습니다. 안드로이드는 “선택해서 읽기”를 사용하실 수 있습니다.</p>
-    </footer>
-  </div>
+  <main id="content" role="main">
+    <div class="container">
 
-  <script>
-    // ===== 설정값 (필요 시 수정) =====
-    const DEFAULT_LANG = new URLSearchParams(location.search).get('lang') || 'ko-KR';
-    const REMOTE_SRC = new URLSearchParams(location.search).get('src'); // ?src=텍스트파일URL (옵션)
-    // ==================================
+      <!-- ✅ 바로가기(목차) -->
+      <nav aria-label="바로가기">
+        <h2>바로가기</h2>
+        <ol class="toc-root">
+          <li><a href="#sec1">Section 1. ‘모든 가방’ 사용설명서</a>
+            <ul class="toc-sub">
+              <li><a href="#what">‘모든 가방’이란?</a></li>
+              <li><a href="#tools">도구 소개</a></li>
+              <li><a href="#return">‘모든 가방’ 반납하기</a></li>
+            </ul>
+          </li>
+          <li><a href="#sec2">Section 2. 관람 가이드</a>
+            <ul class="toc-sub">
+              <li><a href="#enter">미술관 입장하기</a></li>
+              <li><a href="#desk">안내데스크</a></li>
+              <li><a href="#with-children">어린이나 이동에 도움이 필요한 사람과 함께 왔다면,</a></li>
+              <li><a href="#restroom-water">화장실에 가고 싶거나 목이 마르다면,</a></li>
+              <li><a href="#locker">짐이 크거나 무겁나요? 물품보관소가 있어요.</a></li>
+              <li><a href="#locker-steps">내리면 물품 보관소가 보여요.</a></li>
+              <li><a href="#find-gallery">전시실 찾아가기</a></li>
+              <li><a href="#elevator">엘리베이터를 탈 수도 있어요.</a></li>
+              <li><a href="#entry-gallery">전시실 입장하기</a></li>
+              <li><a href="#need-help">전시를 보다 도움이 필요하다면,</a></li>
+              <li><a href="#quiet">조용한 관람을 원한다면,</a></li>
+              <li><a href="#special-exhibition">기획전시실에서는</a></li>
+              <li><a href="#rest">쉬고 싶다면,</a></li>
+              <li><a href="#more-quiet">더 조용한 공간이 필요하신가요?</a></li>
+              <li><a href="#return2">사용한 ‘모든 가방’은 꼭 반납해주세요</a></li>
+            </ul>
+          </li>
+          <li><a href="#sec3">Section 3. 감각지도</a>
+            <ul class="toc-sub">
+              <li><a href="#map-intro">감각지도 소개</a></li>
+              <li><a href="#facilities">편의시설</a></li>
+              <li><a href="#noise">공간별 소음</a></li>
+              <li><a href="#entrances">출입구</a></li>
+              <li><a href="#galleries">전시실</a></li>
+            </ul>
+          </li>
+        </ol>
+        <p class="muted">목차 항목을 선택하면 페이지 안의 해당 위치로 바로 이동합니다.</p>
+      </nav>
 
-    let utterQueue = []; // 문장 단위로 큐잉
-    let speaking = false;
-    let paused = false;
+      <!-- ✅ Section 1 -->
+      <section aria-labelledby="sec1">
+        <h2 id="sec1">Section 1. ‘모든 가방’ 사용설명서</h2>
 
-    const $content = document.getElementById('content');
-    const $status = document.getElementById('status');
-    const $play = document.getElementById('playBtn');
-    const $pause = document.getElementById('pauseBtn');
-    const $resume = document.getElementById('resumeBtn');
-    const $stop = document.getElementById('stopBtn');
-    const $bigStart = document.getElementById('bigStart');
-    const $bigPlay = document.getElementById('bigPlay');
-    const $voiceSel = document.getElementById('voice');
-    const $rate = document.getElementById('rate');
-    const $rateVal = document.getElementById('rateVal');
+        <h3 id="what">‘모든 가방’이란?</h3>
+        <p>'모든 가방(Modeun Gabang)'에는 미술관을 편안하게 관람할 수 있도록 도와주는 도구들이 들어 있어요.</p>
+        <p>모두가 함께, 모두를 위해 만든 특별한 예술 작품입니다.</p>
+        <p>모든 도구를 사용하지 않아도 괜찮아요. 필요할 때 꺼내 쓰고, 원할 때 다시 넣으시면 됩니다.</p>
+        <p>‘모든 가방’은 다음 관람객을 위해 깨끗이 다뤄주세요!</p>
 
-    function setStatus(msg) {
-      $status.textContent = '상태: ' + msg;
-    }
+        <h3 id="tools">도구 소개</h3>
 
-    function getText() {
-      // 콘텐츠에서 화면에 보이는 텍스트만 추출
-      return $content.innerText.trim();
-    }
+        <h4 id="guidebook">쉬운 미술관 안내서</h4>
+        <p>지금 보고 계신 이 책이에요. 쉬운 미술관 안내서에는 4가지 내용이 있어요.</p>
+        <ol>
+          <li>’모든 가방’ 사용설명서<br />가방에 어떤 도구가 들어 있는지, 어떻게 사용하면 좋을지 알려줘요.</li>
+          <li>관람 가이드<br />입장 방법, 스태프를 찾는 방법 등 미술관을 편하게 이용할 수 있는 정보를 담고 있어요.</li>
+          <li>감각지도<br />화장실, 정수기, 전시실, 조용한 공간 등이 표시된 미술관 지도예요.</li>
+          <li>쉬운 글 해설<br />작품 설명을 쉽고 간단한 말로 풀어썼어요. 전시에 따라 쉬운 해설이 없을 수도 있어요.</li>
+        </ol>
 
-    function splitIntoChunks(text) {
-      // 너무 긴 문장을 방지하기 위해 안전하게 분할
-      const parts = text
-        .replace(/\s+/g, ' ')
-        .split(/([.!?。！？]\s+)/);
+        <h4 id="cards">소통카드</h4>
+        <p>도움이 필요하지만 말하기 어려울 때 대신 보여줄 수 있는 카드예요.</p>
 
-      const chunks = [];
-      for (let i = 0; i < parts.length; i += 2) {
-        let sentence = (parts[i] || '') + (parts[i+1] || '');
-        sentence = sentence.trim();
-        if (!sentence) continue;
-        // 길면 추가 분할 (약 180자 단위)
-        if (sentence.length > 180) {
-          for (let j = 0; j < sentence.length; j += 180) {
-            chunks.push(sentence.slice(j, j + 180));
-          }
-        } else {
-          chunks.push(sentence);
-        }
-      }
-      return chunks.length ? chunks : [text];
-    }
+        <h4 id="headset">헤드셋</h4>
+        <p>귀에 쓰면 시끄러운 소리를 막아줘요.</p>
 
-    function fillVoices() {
-      const voices = speechSynthesis.getVoices();
-      $voiceSel.innerHTML = '';
-      // ko-KR 우선, 그 다음 일반 한국어/기타
-      const preferred = voices.filter(v => /ko-KR/i.test(v.lang));
-      const others = voices.filter(v => !/ko-KR/i.test(v.lang));
-      const all = [...preferred, ...others];
-      all.forEach((v, idx) => {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (idx === 0) opt.selected = true;
-        $voiceSel.appendChild(opt);
-      });
-    }
+        <h4 id="fidget">피젯 키링</h4>
+        <p>손으로 만지면서 진정하거나 집중하는 데 도움이 돼요.<br />
+        이 키링은 색깔에 따라 스태프에게 신호를 보내는 용도로도 사용할 수 있어요. 가방 앞쪽에 잘 보이도록 달아주세요.</p>
+        <ul>
+          <li>빨강: 도움이 필요해 보이면 먼저 다가와 주세요.</li>
+          <li>파랑: 작품을 가까이서 보고 싶어요.</li>
+        </ul>
 
-    function makeUtter(text) {
-      const u = new SpeechSynthesisUtterance(text);
-      const chosen = Array.from(speechSynthesis.getVoices()).find(v => v.name === $voiceSel.value) ||
-                     Array.from(speechSynthesis.getVoices()).find(v => v.lang === DEFAULT_LANG);
-      if (chosen) u.voice = chosen;
-      u.lang = chosen?.lang || DEFAULT_LANG;
-      u.rate = parseFloat($rate.value || '1.0');
-      u.onstart = () => setStatus('읽는 중…');
-      u.onend = () => {
-        if (utterQueue.length) {
-          speechSynthesis.speak(utterQueue.shift());
-        } else {
-          speaking = false; setStatus('완료');
-        }
-      };
-      u.onerror = (e) => setStatus('오류: ' + (e.error || '읽기 실패'));
-      return u;
-    }
+        <h4 id="worksheet">활동지</h4>
+        <p>작품을 더 잘 느끼고 이해하도록 도와주는 질문들이 들어 있어요.</p>
 
-    function speakNow() {
-      speechSynthesis.cancel();
-      utterQueue = splitIntoChunks(getText()).map(makeUtter);
-      if (!utterQueue.length) { setStatus('읽을 텍스트가 없습니다'); return; }
-      speaking = true; paused = false;
-      speechSynthesis.speak(utterQueue.shift());
-      setStatus('읽는 중…');
-    }
+        <h4 id="pen">펜</h4>
+        <p>활동지를 채우거나 쓰고 싶은 것이 있을 때 사용해요.</p>
 
-    function tryAutoStart() {
-      // 일부 브라우저(iOS 등)는 사용자 제스처 필요 → 실패 시 큰 시작 버튼 노출
-      try {
-        speakNow();
-        // iOS에서 즉시 실패 감지 어려움 → 600ms 후에 아직 대기면 버튼 노출
-        setTimeout(() => {
-          const isSpeaking = speechSynthesis.speaking;
-          if (!isSpeaking) $bigStart.classList.remove('hidden'); else $bigStart.classList.add('hidden');
-        }, 600);
-      } catch (e) {
-        $bigStart.classList.remove('hidden');
-      }
-    }
+        <h4 id="memo">메모지</h4>
+        <p>글을 써서 소통하거나 적고 싶은 것이 있을 때 사용해요.</p>
 
-    // 이벤트 바인딩
-    $play.addEventListener('click', speakNow);
-    $bigPlay.addEventListener('click', () => { $bigStart.classList.add('hidden'); speakNow(); });
-    $pause.addEventListener('click', () => { if (speechSynthesis.speaking) { speechSynthesis.pause(); paused = true; setStatus('일시 정지'); }});
-    $resume.addEventListener('click', () => { if (paused) { speechSynthesis.resume(); paused = false; setStatus('다시 시작'); }});
-    $stop.addEventListener('click', () => { speechSynthesis.cancel(); utterQueue = []; speaking = false; setStatus('정지됨'); });
-    $rate.addEventListener('input', () => { $rateVal.textContent = `${parseFloat($rate.value).toFixed(1)}x`; });
+        <h3 id="return">‘모든 가방’ 반납하기</h3>
+        <p>관람이 끝나면, ‘모든 가방’을 전시실 앞에 놓인 가방 거치대에 정리해주세요.</p>
+        <p>사용한 활동지는 가져가도 돼요.</p>
+        <p>쉬운 미술관 안내서, 소통카드, 헤드셋, 피젯 키링, 펜, 메모지는 가방 안에 다시 넣어주세요. 다음에 오는 사람이 또 사용할 수 있어요.</p>
+        <p>그럼, 즐거운 관람 되세요!</p>
 
-    // 브라우저에서 음성 목록 로드
-    if ('speechSynthesis' in window) {
-      fillVoices();
-      window.speechSynthesis.onvoiceschanged = fillVoices;
-    } else {
-      setStatus('이 브라우저는 TTS를 지원하지 않습니다. 기기의 접근성 읽기 기능을 사용해 주세요.');
-    }
+        <a class="top-link" href="#top" aria-label="맨 위로">맨 위로 ↑</a>
+        <hr />
+      </section>
 
-    // 원격 텍스트 소스가 지정된 경우 가져와서 본문 교체 (?src=URL)
-    async function maybeLoadRemote() {
-      if (!REMOTE_SRC) return;
-      try {
-        setStatus('텍스트 불러오는 중…');
-        const res = await fetch(REMOTE_SRC, { cache: 'no-store' });
-        const txt = await res.text();
-        $content.innerText = txt.trim();
-        setStatus('불러옴');
-      } catch (e) {
-        setStatus('텍스트 불러오기 실패');
-      }
-    }
+      <!-- ✅ Section 2 -->
+      <section aria-labelledby="sec2">
+        <h2 id="sec2">Section 2. 관람 가이드</h2>
 
-    // 페이지 진입 시 자동 시작 시도
-    (async function init() {
-      await maybeLoadRemote();
-      // iOS 사용자 제스처 우회: 첫 터치에서 한번 더 시도
-      document.addEventListener('touchstart', onceKick, { passive: true, once: true });
-      function onceKick() { if (!speechSynthesis.speaking) speakNow(); }
-      tryAutoStart();
-    })();
-  </script>
+        <h3 id="enter">미술관 입장하기</h3>
+        <ul>
+          <li>음식물이나 음료는 안으로 가져갈 수 없어요.</li>
+          <li>천장이 높아 소리가 조금 울려요.</li>
+        </ul>
+
+        <h3 id="desk">안내데스크</h3>
+        <p>입장하면 왼쪽에 안내데스크가 보여요. 현재 전시를 확인하고, 리플릿을 가져갈 수 있어요. 리플릿은 1층에만 있으니, 필요하다면 이곳에서 미리 챙겨주세요.</p>
+
+        <h3 id="with-children">어린이나 이동에 도움이 필요한 사람과 함께 왔다면,</h3>
+        <p>안내데스크에서 휠체어, 유아차를 빌릴 수 있어요. 안내데스크 뒤쪽에는 놀이방과 수유실이 있어요. 영유아가 쉬거나, 보호자가 수유할 수 있는 곳이에요.</p>
+
+        <h3 id="restroom-water">화장실에 가고 싶거나 목이 마르다면,</h3>
+        <ol>
+          <li>입구에서 오른쪽으로 가세요.</li>
+          <li>화장실과 정수기가 있어요.</li>
+        </ol>
+        <p>화장실은 미술관 모든 층에 있어요.<br />정수기는 1층, 지하1층에만 있어요.</p>
+
+        <h3 id="locker">짐이 크거나 무겁나요? 물품보관소가 있어요.</h3>
+        <ol>
+          <li>입구에서 왼쪽으로 가세요.</li>
+          <li>카페에 도착하기 전, 오른쪽에 엘리베이터가 보여요.</li>
+          <li>엘리베이터를 타고 지하 1층으로 내려가세요.</li>
+        </ol>
+
+        <h3 id="locker-steps">내리면 물품 보관소가 보여요.</h3>
+        <ol>
+          <li>열쇠가 달려있는 칸을 찾으세요.</li>
+          <li>짐을 넣고 문을 닫으세요.</li>
+          <li>열쇠를 왼쪽으로 돌려 문을 잠그세요.</li>
+          <li>열쇠는 잃어버리지 않게 잘 챙겨두세요.</li>
+        </ol>
+
+        <h3 id="find-gallery">전시실 찾아가기</h3>
+        <p>전시실은 1층, 2층, 3층에 있어요. 정해진 순서는 없어요. 원하는 곳부터 방문해보세요.</p>
+        <p>로비에 있는 계단으로 올라갈 수 있어요.</p>
+
+        <h3 id="elevator">엘리베이터를 탈 수도 있어요.</h3>
+        <ol>
+          <li>입구에서 왼쪽으로 가세요.</li>
+          <li>카페에 도착하기 전, 오른쪽에 엘리베이터가 보여요.</li>
+        </ol>
+
+        <h3 id="entry-gallery">전시실 입장하기</h3>
+        <p>전시는 무료예요. 편하게 관람하면 됩니다.</p>
+        <p>유료 전시가 있는 경우에는 매표소에서 티켓을 구입하세요.</p>
+
+        <h3 id="need-help">전시를 보다 도움이 필요하다면,</h3>
+        <p>검정 옷을 입고 카드목걸이를 맨 스태프를 찾아보세요. 주로 전시실 입구 근처 검은 의자에 앉아있어요.</p>
+
+        <h3 id="quiet">조용한 관람을 원한다면,</h3>
+        <p>2층 상설전시는 소음이 적은 편입니다.</p>
+        <p>천경자 컬렉션, 가나아트 컬렉션을 전시하고 있습니다.</p>
+
+        <h3 id="special-exhibition">기획전시실에서는</h3>
+        <p>1, 2, 3층에 있는 기획전시실에서는 빛, 소리 등을 활용한 전시가 열립니다. 시끄럽거나 놀랄 수 있어요.</p>
+
+        <h3 id="rest">쉬고 싶다면,</h3>
+        <p>미술관 곳곳에 앉을 수 있는 의자가 있어요.</p>
+        <ul>
+          <li>1층 입구 근처</li>
+          <li>2층 복도</li>
+          <li>3층 복도, 창가 옆, 서점 옆</li>
+        </ul>
+
+        <h3 id="more-quiet">더 조용한 공간이 필요하신가요?</h3>
+        <p>2층 엘리베이터 옆 도서자료실은 좀 더 조용해요.</p>
+        <p>운영 시간: 화, 수, 목, 금, 토 10시~18시<br />12~13시는 점심시간으로 쉽니다.</p>
+
+        <h3 id="return2">사용한 ‘모든 가방’은 꼭 반납해주세요</h3>
+        <p>관람이 끝나면, ‘모든 가방’을 전시실 앞에 놓인 가방 거치대에 정리해주세요.</p>
+        <p>사용한 활동지는 가져가도 돼요.</p>
+        <p>쉬운 미술관 안내서, 소통카드, 헤드셋, 피젯 키링, 펜, 메모지는 가방 안에 다시 넣어주세요.</p>
+
+        <a class="top-link" href="#top" aria-label="맨 위로">맨 위로 ↑</a>
+        <hr />
+      </section>
+
+      <!-- ✅ Section 3 -->
+      <section aria-labelledby="sec3">
+        <h2 id="sec3">Section 3. 감각지도</h2>
+
+        <h3 id="map-intro">감각지도 소개</h3>
+        <p>낯선 공간이 걱정될 때, 감각지도가 도와줄 거예요.<br />
+        안내데스크, 화장실, 정수기, 엘리베이터, 전시실 등의 위치를 표시했어요.<br />
+        공간별 소음을 색깔과 점자로 표현했어요.</p>
+
+        <h3 id="facilities">편의시설</h3>
+        <ul>
+          <li>안내데스크</li>
+          <li>화장실</li>
+          <li>장애인 화장실</li>
+          <li>엘리베이터</li>
+          <li>계단</li>
+          <li>음수대</li>
+          <li>카페</li>
+          <li>수유실</li>
+          <li>도서자료실</li>
+        </ul>
+
+        <h3 id="noise">공간별 소음</h3>
+        <ul>
+          <li>소음 주의</li>
+          <li>적은 소음</li>
+        </ul>
+
+        <h3 id="entrances">출입구</h3>
+        <ul>
+          <li>1층</li>
+          <li>2층</li>
+          <li>3층</li>
+        </ul>
+
+        <h3 id="galleries">전시실</h3>
+        <ul>
+          <li>1층 전시실</li>
+          <li>2층 전시실</li>
+          <li>3층 전시실</li>
+          <li>가나아트 컬렉션 전시실</li>
+          <li>천경자 컬렉션 전시실</li>
+          <li>휴게 공간</li>
+          <li>서점</li>
+          <li>전시실</li>
+          <li>세마엘</li>
+        </ul>
+
+        <a class="top-link" href="#top" aria-label="맨 위로">맨 위로 ↑</a>
+      </section>
+
+    </div>
+  </main>
+
+  <footer role="contentinfo">
+    <div class="container">
+      <hr />
+      <p class="muted">© 2025</p>
+    </div>
+  </footer>
 </body>
 </html>
