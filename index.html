@@ -16,7 +16,6 @@
       --focus: #ffdf80;
     }
     html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); }
-    html { scroll-behavior: smooth; }
     body {
       font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       font-size: 1.125rem; line-height: 1.7;
@@ -311,5 +310,43 @@
       <p class="muted">© 2025</p>
     </div>
   </footer>
+<script>
+  // iOS VoiceOver에서 목차(내부 링크) 활성화 시 튀는 현상 방지
+  // - 기본 해시 점프를 막고
+  // - 대상 요소에 잠깐 tabindex="-1" 부여 → 포커스 이동(스크롤은 즉시)
+  // - 주소 해시는 유지
+  document.addEventListener('click', function (e) {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+
+    const hash = a.getAttribute('href');
+    const id = decodeURIComponent(hash.slice(1));
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    // 페이지 내 링크만 처리
+    e.preventDefault();
+
+    // 스크린리더 포커스가 정확히 헤딩에 가도록 설정
+    const hadTabindex = target.hasAttribute('tabindex');
+    if (!hadTabindex) target.setAttribute('tabindex', '-1');
+
+    // 포커스 이동은 스크롤 없이,
+    target.focus({ preventScroll: true });
+
+    // 스크롤은 즉시(부드러운 스크롤 금지) 상단 정렬로
+    // iOS에서 reflow/voice 충돌을 줄이기 위해 setTimeout(0) 사용
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      // 해시 갱신(뒤로가기 히스토리는 늘리지 않음)
+      if (location.hash !== hash) history.replaceState(null, '', hash);
+      // 임시 tabindex 정리
+      if (!hadTabindex) target.removeAttribute('tabindex');
+    }, 0);
+  }, { passive: false });
+  [id] { scroll-margin-top: 8px; }
+
+</script>
+
 </body>
 </html>
